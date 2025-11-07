@@ -5,12 +5,14 @@ from fetcher import fetch_paper
 from extractor import extract_text
 from summarizer import summarize_paper
 from generator import generate_pdf
+from config_loader import config
+from logger import log_step, log_info, log_config, console
 
 def main():
     load_dotenv()
     
     if len(sys.argv) < 2:
-        print("Usage: python main.py <arxiv_id>")
+        console.print("[red]Usage:[/red] python main.py <arxiv_id>")
         sys.exit(1)
     
     arxiv_id = sys.argv[1]
@@ -18,20 +20,25 @@ def main():
     os.makedirs("papers", exist_ok=True)
     os.makedirs("outputs", exist_ok=True)
     
-    print(f"Fetching paper {arxiv_id}...")
+    log_config(config.data)
+    
+    log_step("Fetching Paper")
+    log_info(f"ArXiv ID: {arxiv_id}")
     pdf_path = fetch_paper(arxiv_id)
     
-    print("Extracting text...")
+    log_step("Extracting Text")
     text, metadata = extract_text(pdf_path)
+    log_info(f"Title: {metadata['title']}")
     
-    print("Generating summary...")
+    log_step("Generating Summary")
+    log_info(f"Using LLM: {config.get('llm', 'model')}")
     summary = summarize_paper(text, metadata)
     
-    print("Creating PDF...")
+    log_step("Creating PDF")
     output_path = f"outputs/{arxiv_id}_summary.pdf"
     generate_pdf(summary, metadata, output_path)
     
-    print(f"Summary saved to {output_path}")
+    console.print(f"\n[bold green]✓ Summary saved to:[/bold green] [cyan]{output_path}[/cyan]\n")
 
 if __name__ == "__main__":
     main()

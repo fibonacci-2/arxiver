@@ -13,3 +13,4 @@ numpy
 pyyaml
 scikit-learn
 rank-bm25
+rich
