@@ -1,14 +1,14 @@
 import sys
 import os
 from dotenv import load_dotenv
-from searcher import search_papers
-from ranker import rank_papers
-from fetcher import fetch_paper
-from extractor import extract_text
-from multi_summarizer import summarize_multiple_papers
-from report_generator import generate_report_pdf
-from config_loader import config
-from logger import log_step, log_info, log_config, console
+from backend.searcher import search_papers
+from backend.ranker import rank_papers
+from backend.fetcher import fetch_paper
+from backend.extractor import extract_text
+from backend.multi_summarizer import summarize_multiple_papers
+from backend.report_generator import generate_report_pdf
+from backend.config_loader import config
+from backend.logger import log_step, log_info, log_config, console
 
 def main():
     load_dotenv()
@@ -20,8 +20,8 @@ def main():
     
     topic = " ".join(sys.argv[1:])
     
-    os.makedirs("papers", exist_ok=True)
-    os.makedirs("outputs", exist_ok=True)
+    os.makedirs("data/papers", exist_ok=True)
+    os.makedirs("data/outputs", exist_ok=True)
     
     log_config(config.data)
     
@@ -57,7 +57,7 @@ def main():
     log_step("Creating PDF")
     log_info(f"Format: {config.get('output', 'format')}")
     topic_slug = topic.replace(' ', '_')[:50]
-    output_path = f"outputs/{topic_slug}_report.pdf"
+    output_path = f"data/outputs/{topic_slug}_report.pdf"
     generate_report_pdf(report, top_papers, topic, output_path)
     
     console.print(f"\n[bold green]✓ Report saved to:[/bold green] [cyan]{output_path}[/cyan]\n")

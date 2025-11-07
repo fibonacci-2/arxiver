@@ -1,12 +1,12 @@
 import sys
 import os
 from dotenv import load_dotenv
-from fetcher import fetch_paper
-from extractor import extract_text
-from summarizer import summarize_paper
-from generator import generate_pdf
-from config_loader import config
-from logger import log_step, log_info, log_config, console
+from backend.fetcher import fetch_paper
+from backend.extractor import extract_text
+from backend.summarizer import summarize_paper
+from backend.generator import generate_pdf
+from backend.config_loader import config
+from backend.logger import log_step, log_info, log_config, console
 
 def main():
     load_dotenv()
@@ -17,8 +17,8 @@ def main():
     
     arxiv_id = sys.argv[1]
     
-    os.makedirs("papers", exist_ok=True)
-    os.makedirs("outputs", exist_ok=True)
+    os.makedirs("data/papers", exist_ok=True)
+    os.makedirs("data/outputs", exist_ok=True)
     
     log_config(config.data)
     
@@ -35,7 +35,7 @@ def main():
     summary = summarize_paper(text, metadata)
     
     log_step("Creating PDF")
-    output_path = f"outputs/{arxiv_id}_summary.pdf"
+    output_path = f"data/outputs/{arxiv_id}_summary.pdf"
     generate_pdf(summary, metadata, output_path)
     
     console.print(f"\n[bold green]✓ Summary saved to:[/bold green] [cyan]{output_path}[/cyan]\n")

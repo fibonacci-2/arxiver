@@ -14,3 +14,6 @@ pyyaml
 scikit-learn
 rank-bm25
 rich
+fastapi
+uvicorn[standard]
+python-multipart

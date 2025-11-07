@@ -1,0 +1,15 @@
+embeddings:
+  model: text-embedding-3-small
+indexer:
+  chunk_overlap: 200
+  chunk_size: 1000
+  top_k: 10
+  type: vector
+llm:
+  model: gpt-4o-mini
+  temperature: 0
+output:
+  format: latex
+search:
+  max_results: 10
+  top_papers: 5
