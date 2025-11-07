@@ -113,9 +113,17 @@ async def generate_advanced_report(request: dict):
         top_n = config.get("search", "top_papers")
         top_papers = rank_papers(papers, search_query)[:top_n]
         
+        # Return progress info including all papers and their status
+        progress_info = {
+            "total_papers": len(top_papers),
+            "papers_list": [{"title": p["title"], "arxiv_id": p["arxiv_id"]} for p in top_papers]
+        }
+        
         papers_data = []
         errors = []
-        for paper in top_papers:
+        processed_papers = []
+        
+        for idx, paper in enumerate(top_papers, 1):
             arxiv_id = paper['arxiv_id']
             try:
                 pdf_path = fetch_paper(arxiv_id)
@@ -124,8 +132,22 @@ async def generate_advanced_report(request: dict):
                     'text': text,
                     'metadata': metadata
                 })
+                processed_papers.append({
+                    "index": idx,
+                    "title": paper["title"],
+                    "arxiv_id": arxiv_id,
+                    "status": "success"
+                })
             except Exception as e:
-                errors.append(f"Failed to process {arxiv_id}: {str(e)}")
+                error_msg = f"Failed to process {arxiv_id}: {str(e)}"
+                errors.append(error_msg)
+                processed_papers.append({
+                    "index": idx,
+                    "title": paper["title"],
+                    "arxiv_id": arxiv_id,
+                    "status": "error",
+                    "error": str(e)
+                })
                 continue
         
         if not papers_data:
@@ -138,12 +160,29 @@ async def generate_advanced_report(request: dict):
         output_path = f"data/outputs/{output_filename}"
         generate_report_pdf(report, top_papers, search_query, output_path)
         
+        # Create a text preview by removing LaTeX commands
+        import re
+        preview = report
+        preview = re.sub(r'\\begin\{abstract\}', '', preview)
+        preview = re.sub(r'\\end\{abstract\}', '', preview)
+        preview = re.sub(r'\\section\{([^}]+)\}', r'\n\n═══ \1 ═══\n', preview)
+        preview = re.sub(r'\\subsection\{([^}]+)\}', r'\n── \1 ──\n', preview)
+        preview = re.sub(r'\\cite\{([^}]+)\}', r'[\1]', preview)
+        preview = re.sub(r'\\textbf\{([^}]+)\}', r'\1', preview)
+        preview = re.sub(r'\\textit\{([^}]+)\}', r'\1', preview)
+        preview = re.sub(r'\\[a-zA-Z]+\{([^}]+)\}', r'\1', preview)
+        preview = re.sub(r'\\[a-zA-Z]+', '', preview)
+        preview = preview.strip()
+        
         return {
             "status": "success",
             "filename": output_filename,
             "papers": [{"title": p["title"], "arxiv_id": p["arxiv_id"]} for p in top_papers],
+            "processed_papers": processed_papers,
             "query_spec": query_spec,
-            "warnings": errors if errors else None
+            "report_preview": preview[:8000],  # Limit preview size
+            "warnings": errors if errors else None,
+            "progress_info": progress_info
         }
     
     except HTTPException:

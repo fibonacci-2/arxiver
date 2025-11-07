@@ -7,76 +7,115 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>📄 Paper Producer</h1>
-            <p class="subtitle">Generate research reports from ArXiv papers</p>
-        </header>
+    <div class="app-layout">
+        <div class="left-section">
+            <div class="container">
+                <header>
+                    <h1>📄 Paper Producer</h1>
+                    <p class="subtitle">Generate research reports from ArXiv papers</p>
+                </header>
 
-        <div class="config-section">
-            <h2>Configuration</h2>
-            <div class="config-grid">
-                <div class="config-item">
-                    <label for="llm-model">LLM Model</label>
-                    <select id="llm-model">
-                        <option value="gpt-4o-mini">GPT-4o Mini</option>
-                        <option value="gpt-4o">GPT-4o</option>
-                        <option value="gpt-4-turbo">GPT-4 Turbo</option>
-                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                    </select>
+                <div class="config-section">
+                    <h2>Configuration</h2>
+                    <div class="config-grid">
+                        <div class="config-item">
+                            <label for="llm-model">LLM Model</label>
+                            <select id="llm-model">
+                                <option value="gpt-4o-mini">GPT-4o Mini</option>
+                                <option value="gpt-4o">GPT-4o</option>
+                                <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                            </select>
+                        </div>
+
+                        <div class="config-item">
+                            <label for="embedding-model">Embedding Model</label>
+                            <select id="embedding-model">
+                                <option value="text-embedding-3-small">text-embedding-3-small</option>
+                                <option value="text-embedding-3-large">text-embedding-3-large</option>
+                                <option value="text-embedding-ada-002">text-embedding-ada-002</option>
+                            </select>
+                        </div>
+
+                        <div class="config-item">
+                            <label for="indexer-type">Indexer Type</label>
+                            <select id="indexer-type">
+                                <option value="vector">Vector (Dense)</option>
+                                <option value="bm25">BM25</option>
+                                <option value="tfidf">TF-IDF</option>
+                                <option value="inverted">Inverted Index</option>
+                            </select>
+                        </div>
+
+                        <div class="config-item">
+                            <label for="top-papers">Top Papers</label>
+                            <input type="number" id="top-papers" min="1" max="20" value="5">
+                        </div>
+                    </div>
                 </div>
 
-                <div class="config-item">
-                    <label for="embedding-model">Embedding Model</label>
-                    <select id="embedding-model">
-                        <option value="text-embedding-3-small">text-embedding-3-small</option>
-                        <option value="text-embedding-3-large">text-embedding-3-large</option>
-                        <option value="text-embedding-ada-002">text-embedding-ada-002</option>
-                    </select>
-                </div>
-
-                <div class="config-item">
-                    <label for="indexer-type">Indexer Type</label>
-                    <select id="indexer-type">
-                        <option value="vector">Vector (Dense)</option>
-                        <option value="bm25">BM25</option>
-                        <option value="tfidf">TF-IDF</option>
-                        <option value="inverted">Inverted Index</option>
-                    </select>
-                </div>
-
-                <div class="config-item">
-                    <label for="top-papers">Top Papers</label>
-                    <input type="number" id="top-papers" min="1" max="20" value="5">
-                </div>
-            </div>
-        </div>
-
-        <div class="generate-section">
-            <h2>Generate Report</h2>
-            
-            <div class="input-group">
-                <label for="user-query">Research Requirements</label>
-                <textarea id="user-query" rows="6" placeholder="Describe your research report requirements. For example:
+                <div class="generate-section">
+                    <h2>Generate Report</h2>
+                    
+                    <div class="input-group">
+                        <label for="user-query">Research Requirements</label>
+                        <textarea id="user-query" rows="6" placeholder="Describe your research report requirements. For example:
 
 I want a comprehensive report on transformer architectures focusing on efficiency improvements and real-world applications. The report should compare different attention mechanisms and include sections on computational cost, scalability, and deployment strategies. Emphasize papers from the last 2 years."></textarea>
+                    </div>
+                    <button id="action-btn" class="btn btn-primary" data-state="analyze">Analyze Query</button>
+                    <div id="query-spec" class="query-spec hidden"></div>
+                </div>
+
+                <div id="status" class="status hidden"></div>
             </div>
-            <button id="process-query-btn" class="btn btn-secondary">Analyze Query</button>
-            <div id="query-spec" class="query-spec hidden"></div>
-            <button id="generate-btn" class="btn btn-primary hidden">Generate Report</button>
         </div>
-
-        <div class="logs-section">
-            <h3>📋 Progress Log</h3>
-            <div id="logs" class="logs-box"></div>
-        </div>
-
-        <div id="status" class="status hidden"></div>
         
-        <div id="results" class="results hidden">
-            <h2>Generated Report</h2>
-            <div id="papers-list"></div>
-            <button id="download-btn" class="btn btn-success">Download PDF</button>
+        <div class="middle-section">
+            <div class="panel-section">
+                <h3>📄 Papers Fetched</h3>
+                <div id="papers-list" class="papers-box">
+                    <div class="empty-state">No papers loaded yet</div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <h3>📋 Progress Log</h3>
+                <div id="logs" class="logs-box"></div>
+            </div>
+        </div>
+        
+        <div class="right-section">
+            <div class="preview-panel">
+                <div class="preview-header">
+                    <div class="preview-title">
+                        <span class="preview-icon">📄</span>
+                        <span id="preview-title-text">Report Preview</span>
+                    </div>
+                    <div class="preview-tools">
+                        <button id="download-btn" class="tool-btn tool-btn-primary hidden" title="Download the generated PDF report">
+                            <span class="btn-icon">📥</span>
+                            <span class="btn-text">Download PDF</span>
+                        </button>
+                        <button class="tool-btn tool-btn-disabled" disabled title="Edit feature coming soon">
+                            <span class="btn-icon">✏️</span>
+                            <span class="btn-text">Edit</span>
+                        </button>
+                        <button class="tool-btn tool-btn-disabled" disabled title="Share feature coming soon">
+                            <span class="btn-icon">🔗</span>
+                            <span class="btn-text">Share</span>
+                        </button>
+                    </div>
+                </div>
+                    <div class="report-preview" id="report-preview">
+                        <div class="empty-state">
+                            <div class="empty-icon">📄</div>
+                            <p>Report preview will appear here</p>
+                            <p class="empty-hint">Generate a report to see the preview</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
