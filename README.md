@@ -27,9 +27,8 @@
 
 ## 📐 System Overview
 
-![System Architecture](system-overview.pdf)
+![System Architecture](system-overview.png)
 
-[📄 View Full System Overview (PDF)](./system-overview.pdf)
 
 ### Pipeline Flow
 
