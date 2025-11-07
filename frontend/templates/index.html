@@ -46,11 +46,29 @@
 
         <div class="generate-section">
             <h2>Generate Report</h2>
-            <div class="input-group">
-                <label for="topic">Research Topic</label>
-                <input type="text" id="topic" placeholder="e.g., transformer models in NLP">
+            
+            <div class="mode-switch">
+                <button id="simple-mode-btn" class="mode-btn active">Simple Mode</button>
+                <button id="advanced-mode-btn" class="mode-btn">Advanced Mode</button>
             </div>
-            <button id="generate-btn" class="btn btn-primary">Generate Report</button>
+            
+            <div id="simple-mode" class="mode-content">
+                <div class="input-group">
+                    <label for="topic">Research Topic</label>
+                    <input type="text" id="topic" placeholder="e.g., transformer models in NLP">
+                </div>
+                <button id="generate-btn" class="btn btn-primary">Generate Report</button>
+            </div>
+            
+            <div id="advanced-mode" class="mode-content hidden">
+                <div class="input-group">
+                    <label for="advanced-query">Detailed Requirements</label>
+                    <textarea id="advanced-query" rows="6" placeholder="Example: I want a report on transformer architectures focusing on efficiency improvements and real-world applications. The report should compare different attention mechanisms and include sections on computational cost, scalability, and deployment strategies. Emphasize papers from the last 2 years."></textarea>
+                </div>
+                <button id="process-query-btn" class="btn btn-secondary">Process Query</button>
+                <div id="query-spec" class="query-spec hidden"></div>
+                <button id="generate-advanced-btn" class="btn btn-primary hidden">Generate Report</button>
+            </div>
         </div>
 
         <div id="status" class="status hidden"></div>

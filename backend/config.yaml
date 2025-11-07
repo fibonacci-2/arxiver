@@ -4,7 +4,7 @@ indexer:
   chunk_overlap: 200
   chunk_size: 1000
   top_k: 10
-  type: vector
+  type: inverted
 llm:
   model: gpt-4o-mini
   temperature: 0
@@ -12,4 +12,4 @@ output:
   format: latex
 search:
   max_results: 10
-  top_papers: 5
+  top_papers: 20

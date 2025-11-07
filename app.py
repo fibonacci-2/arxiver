@@ -68,6 +68,20 @@ async def update_config(updates: ConfigUpdate):
     config.update(config_updates)
     return {"status": "success", "config": config.data}
 
+@app.post("/api/process-query")
+async def process_query(request: dict):
+    try:
+        from backend.query_processor import process_user_query
+        user_input = request.get("query", "")
+        
+        if not user_input:
+            raise HTTPException(status_code=400, detail="Query is required")
+        
+        query_spec = process_user_query(user_input)
+        return query_spec
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/generate")
 async def generate_report(request: GenerateRequest, background_tasks: BackgroundTasks):
     try:
@@ -87,17 +101,29 @@ async def generate_report(request: GenerateRequest, background_tasks: Background
         os.makedirs("data/outputs", exist_ok=True)
         
         papers = search_papers(topic)
+        
+        if not papers:
+            raise HTTPException(status_code=404, detail=f"No papers found for topic: {topic}")
+        
         top_papers = rank_papers(papers, topic)
         
         papers_data = []
+        errors = []
         for paper in top_papers:
             arxiv_id = paper['arxiv_id']
-            pdf_path = fetch_paper(arxiv_id)
-            text, metadata = extract_text(pdf_path)
-            papers_data.append({
-                'text': text,
-                'metadata': metadata
-            })
+            try:
+                pdf_path = fetch_paper(arxiv_id)
+                text, metadata = extract_text(pdf_path)
+                papers_data.append({
+                    'text': text,
+                    'metadata': metadata
+                })
+            except Exception as e:
+                errors.append(f"Failed to process {arxiv_id}: {str(e)}")
+                continue
+        
+        if not papers_data:
+            raise HTTPException(status_code=500, detail=f"Failed to fetch any papers. Errors: {'; '.join(errors)}")
         
         report = summarize_multiple_papers(papers_data, topic)
         
@@ -109,11 +135,79 @@ async def generate_report(request: GenerateRequest, background_tasks: Background
         return {
             "status": "success",
             "filename": output_filename,
-            "papers": [{"title": p["title"], "arxiv_id": p["arxiv_id"]} for p in top_papers]
+            "papers": [{"title": p["title"], "arxiv_id": p["arxiv_id"]} for p in top_papers],
+            "warnings": errors if errors else None
         }
     
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        detail = f"{str(e)}\n\nTraceback: {traceback.format_exc()}"
+        raise HTTPException(status_code=500, detail=detail)
+
+@app.post("/api/generate-advanced")
+async def generate_advanced_report(request: dict):
+    try:
+        from backend.query_processor import process_user_query
+        
+        user_query = request.get("user_query", "")
+        if not user_query:
+            raise HTTPException(status_code=400, detail="User query is required")
+        
+        query_spec = process_user_query(user_query)
+        
+        search_query = query_spec.get("search_query", user_query)
+        
+        os.makedirs("data/papers", exist_ok=True)
+        os.makedirs("data/outputs", exist_ok=True)
+        
+        papers = search_papers(search_query)
+        
+        if not papers:
+            raise HTTPException(status_code=404, detail=f"No papers found for query: {search_query}")
+        
+        top_papers = rank_papers(papers, search_query)
+        
+        papers_data = []
+        errors = []
+        for paper in top_papers:
+            arxiv_id = paper['arxiv_id']
+            try:
+                pdf_path = fetch_paper(arxiv_id)
+                text, metadata = extract_text(pdf_path)
+                papers_data.append({
+                    'text': text,
+                    'metadata': metadata
+                })
+            except Exception as e:
+                errors.append(f"Failed to process {arxiv_id}: {str(e)}")
+                continue
+        
+        if not papers_data:
+            raise HTTPException(status_code=500, detail=f"Failed to fetch any papers. Errors: {'; '.join(errors)}")
+        
+        report = summarize_multiple_papers(papers_data, search_query, query_spec)
+        
+        topic_slug = search_query.replace(' ', '_')[:50]
+        output_filename = f"{topic_slug}_report.pdf"
+        output_path = f"data/outputs/{output_filename}"
+        generate_report_pdf(report, top_papers, search_query, output_path)
+        
+        return {
+            "status": "success",
+            "filename": output_filename,
+            "papers": [{"title": p["title"], "arxiv_id": p["arxiv_id"]} for p in top_papers],
+            "query_spec": query_spec,
+            "warnings": errors if errors else None
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        detail = f"{str(e)}\n\nTraceback: {traceback.format_exc()}"
+        raise HTTPException(status_code=500, detail=detail)
 
 @app.get("/api/download/{filename}")
 async def download_file(filename: str):

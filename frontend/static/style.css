@@ -196,6 +196,86 @@ input:focus, select:focus {
     color: #6b7280;
 }
 
+.mode-switch {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.mode-btn {
+    padding: 0.5rem 1.5rem;
+    border: 2px solid #667eea;
+    background: white;
+    color: #667eea;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.mode-btn.active {
+    background: #667eea;
+    color: white;
+}
+
+.mode-btn:hover:not(.active) {
+    background: #f0f4ff;
+}
+
+.mode-content.hidden {
+    display: none;
+}
+
+textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: inherit;
+    resize: vertical;
+    transition: border-color 0.3s;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.query-spec {
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1rem 0;
+    border-left: 4px solid #667eea;
+}
+
+.query-spec h3 {
+    color: #667eea;
+    margin: 0 0 1rem 0;
+    font-size: 1.1rem;
+}
+
+.query-spec .spec-item {
+    margin-bottom: 1rem;
+}
+
+.query-spec .spec-label {
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 0.5rem;
+}
+
+.query-spec .spec-value {
+    color: #333;
+    padding-left: 1rem;
+}
+
+.query-spec ul {
+    margin: 0.5rem 0 0 1.5rem;
+    color: #555;
+}
+
 .spinner {
     display: inline-block;
     width: 16px;
