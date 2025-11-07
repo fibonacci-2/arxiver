@@ -1,12 +1,12 @@
 .env
-*.pdf
+
 *.pyc
 __pycache__/
 venv/
 .venv/
 .vscode/
 data/papers/
-data/outputs/
+#data/outputs/
 chroma_db/
 chroma_db_multi/
 *.aux
