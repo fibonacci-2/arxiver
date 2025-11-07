@@ -29,6 +29,7 @@
 
 ![System Architecture](system-overview.png)
 
+![System Demo](image.png)
 
 ### Pipeline Flow
 
