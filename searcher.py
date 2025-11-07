@@ -1,6 +1,10 @@
 import arxiv
+from config_loader import config
 
-def search_papers(topic, max_results=10):
+def search_papers(topic, max_results=None):
+    if max_results is None:
+        max_results = config.get('search', 'max_results')
+    
     client = arxiv.Client()
     search = arxiv.Search(
         query=topic,

@@ -1,52 +1,40 @@
 import os
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
-from langchain_community.vectorstores import Chroma
+from langchain_openai import ChatOpenAI
+from config_loader import config
+from indexers import get_indexer
 
 def summarize_multiple_papers(papers_data, topic):
-    all_chunks = []
-    chunk_metadata = []
+    indexer_type = config.get('indexer', 'type')
+    chunk_size = config.get('indexer', 'chunk_size')
+    chunk_overlap = config.get('indexer', 'chunk_overlap')
+    top_k = config.get('indexer', 'top_k')
     
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=200
-    )
+    indexer = get_indexer(indexer_type, chunk_size, chunk_overlap)
+    indexer.index(papers_data)
     
-    for paper_data in papers_data:
-        text = paper_data['text']
-        metadata = paper_data['metadata']
-        
-        chunks = text_splitter.split_text(text)
-        all_chunks.extend(chunks)
-        
-        for _ in chunks:
-            chunk_metadata.append({
-                'title': metadata['title'],
-                'arxiv_id': metadata['arxiv_id']
-            })
+    relevant_docs = indexer.retrieve(f"Research about {topic}", top_k)
     
-    embeddings = OpenAIEmbeddings()
-    vectorstore = Chroma.from_texts(
-        texts=all_chunks,
-        embedding=embeddings,
-        metadatas=chunk_metadata,
-        persist_directory="chroma_db_multi"
-    )
+    context_parts = []
+    for doc in relevant_docs:
+        if hasattr(doc, 'page_content'):
+            title = doc.metadata['title']
+            content = doc.page_content
+        else:
+            title = doc['metadata']['title']
+            content = doc['page_content']
+        context_parts.append(f"[From: {title}]\n{content}")
     
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-    
-    retriever = vectorstore.as_retriever(search_kwargs={"k": 10})
-    relevant_docs = retriever.invoke(f"Research about {topic}")
-    
-    context = "\n\n".join([
-        f"[From: {doc.metadata['title']}]\n{doc.page_content}" 
-        for doc in relevant_docs
-    ])
+    context = "\n\n".join(context_parts)
     
     paper_list = "\n".join([
         f"- {p['metadata']['title']} (arXiv:{p['metadata']['arxiv_id']})"
         for p in papers_data
     ])
+    
+    model_name = config.get('llm', 'model')
+    temperature = config.get('llm', 'temperature')
+    
+    llm = ChatOpenAI(model=model_name, temperature=temperature)
     
     prompt = f"""Create a comprehensive research report on the topic: {topic}
 
@@ -63,7 +51,9 @@ Use the context below to write a cohesive report covering:
 Context from papers:
 {context}
 
-Generate a well-structured report:"""
+Generate the report in LaTeX format with proper sections, subsections, and citations.
+Use \\section, \\subsection for structure. Output only the document body content (no preamble or document environment).
+Escape special characters properly. Use \\cite{{paper1}}, \\cite{{paper2}}, etc. for references."""
     
     response = llm.invoke(prompt)
     return response.content

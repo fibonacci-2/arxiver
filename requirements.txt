@@ -10,3 +10,6 @@ chromadb
 reportlab
 python-dotenv
 numpy
+pyyaml
+scikit-learn
+rank-bm25

@@ -22,11 +22,11 @@ def main():
     os.makedirs("outputs", exist_ok=True)
     
     print(f"Searching for papers on: {topic}")
-    papers = search_papers(topic, max_results=10)
+    papers = search_papers(topic)
     print(f"Found {len(papers)} papers")
     
     print("Ranking papers by relevance...")
-    top_papers = rank_papers(papers, topic, top_k=5)
+    top_papers = rank_papers(papers, topic)
     print(f"Selected top {len(top_papers)} papers:")
     for i, paper in enumerate(top_papers, 1):
         print(f"  {i}. {paper['title']}")

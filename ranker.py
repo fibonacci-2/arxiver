@@ -1,8 +1,13 @@
 from langchain_openai import OpenAIEmbeddings
+from config_loader import config
 import numpy as np
 
-def rank_papers(papers, topic, top_k=5):
-    embeddings = OpenAIEmbeddings()
+def rank_papers(papers, topic, top_k=None):
+    if top_k is None:
+        top_k = config.get('search', 'top_papers')
+    
+    embedding_model = config.get('embeddings', 'model')
+    embeddings = OpenAIEmbeddings(model=embedding_model)
     
     topic_embedding = embeddings.embed_query(topic)
     
