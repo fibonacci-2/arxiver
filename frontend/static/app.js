@@ -1,6 +1,19 @@
 let currentFilename = null;
 let currentQuerySpec = null;
-let currentMode = 'simple';
+
+function addLog(message, type = 'info') {
+    const logsBox = document.getElementById('logs');
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = document.createElement('div');
+    logEntry.className = `log-entry ${type}`;
+    logEntry.innerHTML = `<span class="log-timestamp">[${timestamp}]</span>${message}`;
+    logsBox.appendChild(logEntry);
+    logsBox.scrollTop = logsBox.scrollHeight;
+}
+
+function clearLogs() {
+    document.getElementById('logs').innerHTML = '';
+}
 
 async function loadConfig() {
     try {
@@ -8,80 +21,15 @@ async function loadConfig() {
         const config = await response.json();
         
         document.getElementById('llm-model').value = config.llm.model;
+        document.getElementById('embedding-model').value = config.embeddings.model;
         document.getElementById('indexer-type').value = config.indexer.type;
         document.getElementById('top-papers').value = config.search.top_papers;
     } catch (error) {
-        showStatus('Failed to load configuration', 'error');
+        addLog('Failed to load configuration', 'error');
     }
 }
 
-async function saveConfig() {
-    try {
-        const config = {
-            llm_model: document.getElementById('llm-model').value,
-            indexer_type: document.getElementById('indexer-type').value,
-            top_papers: parseInt(document.getElementById('top-papers').value)
-        };
-        
-        const response = await fetch('/api/config', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(config)
-        });
-        
-        if (response.ok) {
-            showStatus('Configuration saved successfully', 'success');
-        } else {
-            showStatus('Failed to save configuration', 'error');
-        }
-    } catch (error) {
-        showStatus('Error: ' + error.message, 'error');
-    }
-}
 
-async function generateReport() {
-    const topic = document.getElementById('topic').value.trim();
-    
-    if (!topic) {
-        showStatus('Please enter a research topic', 'error');
-        return;
-    }
-    
-    const generateBtn = document.getElementById('generate-btn');
-    generateBtn.disabled = true;
-    generateBtn.innerHTML = '<span class="spinner"></span> Generating...';
-    
-    showStatus('Searching and processing papers...', 'info');
-    document.getElementById('results').classList.add('hidden');
-    
-    try {
-        const response = await fetch('/api/generate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                topic: topic,
-                llm_model: document.getElementById('llm-model').value,
-                indexer_type: document.getElementById('indexer-type').value,
-                top_papers: parseInt(document.getElementById('top-papers').value)
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            currentFilename = data.filename;
-            displayResults(data.papers);
-            showStatus('Report generated successfully!', 'success');
-        } else {
-            showStatus('Error: ' + data.detail, 'error');
-        }
-    } catch (error) {
-        showStatus('Error: ' + error.message, 'error');
-    } finally {
-        generateBtn.disabled = false;
-        generateBtn.innerHTML = 'Generate Report';
-    }
-}
 
 function displayResults(papers) {
     const papersList = document.getElementById('papers-list');
@@ -120,16 +68,19 @@ function showStatus(message, type) {
 }
 
 async function processQuery() {
-    const query = document.getElementById('advanced-query').value.trim();
+    const query = document.getElementById('user-query').value.trim();
     
     if (!query) {
         showStatus('Please enter your requirements', 'error');
         return;
     }
     
+    clearLogs();
     const processBtn = document.getElementById('process-query-btn');
     processBtn.disabled = true;
-    processBtn.innerHTML = '<span class="spinner"></span> Processing...';
+    processBtn.innerHTML = '<span class="spinner"></span> Analyzing...';
+    
+    addLog('🔍 Analyzing query requirements...', 'info');
     
     try {
         const response = await fetch('/api/process-query', {
@@ -143,16 +94,21 @@ async function processQuery() {
         if (response.ok) {
             currentQuerySpec = data;
             displayQuerySpec(data);
-            document.getElementById('generate-advanced-btn').classList.remove('hidden');
-            showStatus('Query processed successfully!', 'success');
+            document.getElementById('generate-btn').classList.remove('hidden');
+            addLog('✅ Query processed successfully!', 'success');
+            addLog(`📊 Search query: "${data.search_query}"`, 'info');
+            addLog(`📝 ${data.themes.length} themes identified`, 'info');
+            showStatus('Query analyzed successfully!', 'success');
         } else {
+            addLog(`❌ Error: ${data.detail}`, 'error');
             showStatus('Error: ' + data.detail, 'error');
         }
     } catch (error) {
+        addLog(`❌ Error: ${error.message}`, 'error');
         showStatus('Error: ' + error.message, 'error');
     } finally {
         processBtn.disabled = false;
-        processBtn.innerHTML = 'Process Query';
+        processBtn.innerHTML = 'Analyze Query';
     }
 }
 
@@ -181,25 +137,38 @@ function displayQuerySpec(spec) {
     querySpecDiv.classList.remove('hidden');
 }
 
-async function generateAdvancedReport() {
+async function generateReport() {
     if (!currentQuerySpec) {
-        showStatus('Please process your query first', 'error');
+        showStatus('Please analyze your query first', 'error');
+        addLog('⚠️ Please analyze your query first', 'warning');
         return;
     }
     
-    const generateBtn = document.getElementById('generate-advanced-btn');
+    const generateBtn = document.getElementById('generate-btn');
     generateBtn.disabled = true;
     generateBtn.innerHTML = '<span class="spinner"></span> Generating...';
     
     showStatus('Searching and processing papers...', 'info');
     document.getElementById('results').classList.add('hidden');
     
+    addLog('🔎 Searching ArXiv for relevant papers...', 'info');
+    
     try {
+        // Get current config values
+        const llmModel = document.getElementById('llm-model').value;
+        const embeddingModel = document.getElementById('embedding-model').value;
+        const indexerType = document.getElementById('indexer-type').value;
+        const topPapers = parseInt(document.getElementById('top-papers').value);
+        
         const response = await fetch('/api/generate-advanced', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                user_query: document.getElementById('advanced-query').value
+                user_query: document.getElementById('user-query').value,
+                llm_model: llmModel,
+                embedding_model: embeddingModel,
+                indexer_type: indexerType,
+                top_papers: topPapers
             })
         });
         
@@ -207,12 +176,24 @@ async function generateAdvancedReport() {
         
         if (response.ok) {
             currentFilename = data.filename;
+            addLog(`✅ Found ${data.papers.length} papers`, 'success');
+            addLog('📄 Generating report with LaTeX...', 'info');
             displayResults(data.papers);
+            addLog('🎉 Report generated successfully!', 'success');
+            addLog(`💾 Saved as: ${data.filename}`, 'info');
             showStatus('Report generated successfully!', 'success');
+            
+            if (data.warnings && data.warnings.length > 0) {
+                data.warnings.forEach(warning => {
+                    addLog(`⚠️ ${warning}`, 'warning');
+                });
+            }
         } else {
+            addLog(`❌ Error: ${data.detail}`, 'error');
             showStatus('Error: ' + data.detail, 'error');
         }
     } catch (error) {
+        addLog(`❌ Error: ${error.message}`, 'error');
         showStatus('Error: ' + error.message, 'error');
     } finally {
         generateBtn.disabled = false;
@@ -220,32 +201,8 @@ async function generateAdvancedReport() {
     }
 }
 
-function switchMode(mode) {
-    currentMode = mode;
-    
-    document.getElementById('simple-mode-btn').classList.toggle('active', mode === 'simple');
-    document.getElementById('advanced-mode-btn').classList.toggle('active', mode === 'advanced');
-    
-    document.getElementById('simple-mode').classList.toggle('hidden', mode !== 'simple');
-    document.getElementById('advanced-mode').classList.toggle('hidden', mode !== 'advanced');
-    
-    document.getElementById('results').classList.add('hidden');
-    document.getElementById('status').classList.add('hidden');
-}
-
-document.getElementById('simple-mode-btn').addEventListener('click', () => switchMode('simple'));
-document.getElementById('advanced-mode-btn').addEventListener('click', () => switchMode('advanced'));
-
-document.getElementById('save-config').addEventListener('click', saveConfig);
-document.getElementById('generate-btn').addEventListener('click', generateReport);
 document.getElementById('process-query-btn').addEventListener('click', processQuery);
-document.getElementById('generate-advanced-btn').addEventListener('click', generateAdvancedReport);
+document.getElementById('generate-btn').addEventListener('click', generateReport);
 document.getElementById('download-btn').addEventListener('click', downloadReport);
-
-document.getElementById('topic').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        generateReport();
-    }
-});
 
 loadConfig();

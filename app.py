@@ -20,12 +20,6 @@ app = FastAPI(title="Paper Producer")
 
 app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
 
-class GenerateRequest(BaseModel):
-    topic: str
-    llm_model: Optional[str] = None
-    indexer_type: Optional[str] = None
-    top_papers: Optional[int] = None
-
 class ConfigUpdate(BaseModel):
     llm_model: Optional[str] = None
     indexer_type: Optional[str] = None
@@ -82,69 +76,7 @@ async def process_query(request: dict):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/generate")
-async def generate_report(request: GenerateRequest, background_tasks: BackgroundTasks):
-    try:
-        topic = request.topic
-        
-        if request.llm_model or request.indexer_type or request.top_papers:
-            updates = {}
-            if request.llm_model:
-                updates["llm"] = {"model": request.llm_model}
-            if request.indexer_type:
-                updates["indexer"] = {"type": request.indexer_type}
-            if request.top_papers:
-                updates["search"] = {"top_papers": request.top_papers}
-            config.update(updates)
-        
-        os.makedirs("data/papers", exist_ok=True)
-        os.makedirs("data/outputs", exist_ok=True)
-        
-        papers = search_papers(topic)
-        
-        if not papers:
-            raise HTTPException(status_code=404, detail=f"No papers found for topic: {topic}")
-        
-        top_papers = rank_papers(papers, topic)
-        
-        papers_data = []
-        errors = []
-        for paper in top_papers:
-            arxiv_id = paper['arxiv_id']
-            try:
-                pdf_path = fetch_paper(arxiv_id)
-                text, metadata = extract_text(pdf_path)
-                papers_data.append({
-                    'text': text,
-                    'metadata': metadata
-                })
-            except Exception as e:
-                errors.append(f"Failed to process {arxiv_id}: {str(e)}")
-                continue
-        
-        if not papers_data:
-            raise HTTPException(status_code=500, detail=f"Failed to fetch any papers. Errors: {'; '.join(errors)}")
-        
-        report = summarize_multiple_papers(papers_data, topic)
-        
-        topic_slug = topic.replace(' ', '_')[:50]
-        output_filename = f"{topic_slug}_report.pdf"
-        output_path = f"data/outputs/{output_filename}"
-        generate_report_pdf(report, top_papers, topic, output_path)
-        
-        return {
-            "status": "success",
-            "filename": output_filename,
-            "papers": [{"title": p["title"], "arxiv_id": p["arxiv_id"]} for p in top_papers],
-            "warnings": errors if errors else None
-        }
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        import traceback
-        detail = f"{str(e)}\n\nTraceback: {traceback.format_exc()}"
-        raise HTTPException(status_code=500, detail=detail)
+
 
 @app.post("/api/generate-advanced")
 async def generate_advanced_report(request: dict):
@@ -154,6 +86,16 @@ async def generate_advanced_report(request: dict):
         user_query = request.get("user_query", "")
         if not user_query:
             raise HTTPException(status_code=400, detail="User query is required")
+        
+        # Apply runtime config updates if provided
+        if request.get("llm_model"):
+            config.update({"llm": {"model": request["llm_model"]}})
+        if request.get("embedding_model"):
+            config.update({"embeddings": {"model": request["embedding_model"]}})
+        if request.get("indexer_type"):
+            config.update({"indexer": {"type": request["indexer_type"]}})
+        if request.get("top_papers"):
+            config.update({"search": {"top_papers": request["top_papers"]}})
         
         query_spec = process_user_query(user_query)
         
@@ -167,7 +109,9 @@ async def generate_advanced_report(request: dict):
         if not papers:
             raise HTTPException(status_code=404, detail=f"No papers found for query: {search_query}")
         
-        top_papers = rank_papers(papers, search_query)
+        # Get top_papers from config (which may have been updated above)
+        top_n = config.get("search", "top_papers")
+        top_papers = rank_papers(papers, search_query)[:top_n]
         
         papers_data = []
         errors = []

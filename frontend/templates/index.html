@@ -27,6 +27,15 @@
                 </div>
 
                 <div class="config-item">
+                    <label for="embedding-model">Embedding Model</label>
+                    <select id="embedding-model">
+                        <option value="text-embedding-3-small">text-embedding-3-small</option>
+                        <option value="text-embedding-3-large">text-embedding-3-large</option>
+                        <option value="text-embedding-ada-002">text-embedding-ada-002</option>
+                    </select>
+                </div>
+
+                <div class="config-item">
                     <label for="indexer-type">Indexer Type</label>
                     <select id="indexer-type">
                         <option value="vector">Vector (Dense)</option>
@@ -38,37 +47,28 @@
 
                 <div class="config-item">
                     <label for="top-papers">Top Papers</label>
-                    <input type="number" id="top-papers" min="1" max="10" value="5">
+                    <input type="number" id="top-papers" min="1" max="20" value="5">
                 </div>
             </div>
-            <button id="save-config" class="btn btn-secondary">Save Configuration</button>
         </div>
 
         <div class="generate-section">
             <h2>Generate Report</h2>
             
-            <div class="mode-switch">
-                <button id="simple-mode-btn" class="mode-btn active">Simple Mode</button>
-                <button id="advanced-mode-btn" class="mode-btn">Advanced Mode</button>
+            <div class="input-group">
+                <label for="user-query">Research Requirements</label>
+                <textarea id="user-query" rows="6" placeholder="Describe your research report requirements. For example:
+
+I want a comprehensive report on transformer architectures focusing on efficiency improvements and real-world applications. The report should compare different attention mechanisms and include sections on computational cost, scalability, and deployment strategies. Emphasize papers from the last 2 years."></textarea>
             </div>
-            
-            <div id="simple-mode" class="mode-content">
-                <div class="input-group">
-                    <label for="topic">Research Topic</label>
-                    <input type="text" id="topic" placeholder="e.g., transformer models in NLP">
-                </div>
-                <button id="generate-btn" class="btn btn-primary">Generate Report</button>
-            </div>
-            
-            <div id="advanced-mode" class="mode-content hidden">
-                <div class="input-group">
-                    <label for="advanced-query">Detailed Requirements</label>
-                    <textarea id="advanced-query" rows="6" placeholder="Example: I want a report on transformer architectures focusing on efficiency improvements and real-world applications. The report should compare different attention mechanisms and include sections on computational cost, scalability, and deployment strategies. Emphasize papers from the last 2 years."></textarea>
-                </div>
-                <button id="process-query-btn" class="btn btn-secondary">Process Query</button>
-                <div id="query-spec" class="query-spec hidden"></div>
-                <button id="generate-advanced-btn" class="btn btn-primary hidden">Generate Report</button>
-            </div>
+            <button id="process-query-btn" class="btn btn-secondary">Analyze Query</button>
+            <div id="query-spec" class="query-spec hidden"></div>
+            <button id="generate-btn" class="btn btn-primary hidden">Generate Report</button>
+        </div>
+
+        <div class="logs-section">
+            <h3>📋 Progress Log</h3>
+            <div id="logs" class="logs-box"></div>
         </div>
 
         <div id="status" class="status hidden"></div>

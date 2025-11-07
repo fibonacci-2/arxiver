@@ -196,36 +196,6 @@ input:focus, select:focus {
     color: #6b7280;
 }
 
-.mode-switch {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-.mode-btn {
-    padding: 0.5rem 1.5rem;
-    border: 2px solid #667eea;
-    background: white;
-    color: #667eea;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: all 0.3s;
-}
-
-.mode-btn.active {
-    background: #667eea;
-    color: white;
-}
-
-.mode-btn:hover:not(.active) {
-    background: #f0f4ff;
-}
-
-.mode-content.hidden {
-    display: none;
-}
-
 textarea {
     width: 100%;
     padding: 0.75rem;
@@ -240,6 +210,56 @@ textarea {
 textarea:focus {
     outline: none;
     border-color: #667eea;
+}
+
+.logs-section {
+    padding: 2rem;
+    border-bottom: 1px solid #eee;
+}
+
+.logs-section h3 {
+    color: #667eea;
+    margin-bottom: 0.75rem;
+    font-size: 1.1rem;
+}
+
+.logs-box {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 1rem;
+    border-radius: 8px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.85rem;
+    height: 200px;
+    overflow-y: auto;
+    border: 2px solid #333;
+}
+
+.log-entry {
+    margin-bottom: 0.5rem;
+    padding: 0.25rem;
+    line-height: 1.5;
+}
+
+.log-entry.info {
+    color: #4ec9b0;
+}
+
+.log-entry.success {
+    color: #6a9955;
+}
+
+.log-entry.error {
+    color: #f48771;
+}
+
+.log-entry.warning {
+    color: #dcdcaa;
+}
+
+.log-timestamp {
+    color: #858585;
+    margin-right: 0.5rem;
 }
 
 .query-spec {
