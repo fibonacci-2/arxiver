@@ -1,4 +1,4 @@
-# Paper Producer - Web UI
+# Composer AI - Web UI
 
 ## ✅ Project Successfully Restructured!
 

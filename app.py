@@ -16,7 +16,7 @@ from backend.extractor import extract_text
 from backend.multi_summarizer import summarize_multiple_papers
 from backend.report_generator import generate_report_pdf
 
-app = FastAPI(title="Paper Producer")
+app = FastAPI(title="Composer AI")
 
 app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
 

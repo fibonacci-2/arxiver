@@ -4,6 +4,7 @@ from langchain_community.vectorstores import Chroma
 from sklearn.feature_extraction.text import TfidfVectorizer
 from rank_bm25 import BM25Okapi
 import numpy as np
+import re
 
 class BaseIndexer:
     def __init__(self, chunk_size=1000, chunk_overlap=200):
@@ -11,6 +12,27 @@ class BaseIndexer:
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap
         )
+    
+    def clean_text_for_indexing(self, text):
+        """Clean text to ensure it's safe for indexing and embedding."""
+        if not text:
+            return ""
+        
+        # Remove or replace surrogate characters and other problematic Unicode characters
+        text = re.sub(r'[\ud800-\udfff]', '', text)
+        
+        # Remove other common problematic characters
+        text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x84\x86-\x9f]', ' ', text)
+        
+        # Replace multiple whitespaces with single space
+        text = re.sub(r'\s+', ' ', text).strip()
+        
+        # Ensure the text can be encoded as UTF-8
+        try:
+            text.encode('utf-8')
+            return text
+        except UnicodeEncodeError:
+            return text.encode('utf-8', 'ignore').decode('utf-8')
     
     def index(self, papers_data):
         raise NotImplementedError
@@ -24,17 +46,22 @@ class VectorIndexer(BaseIndexer):
         chunk_metadata = []
         
         for paper_data in papers_data:
-            text = paper_data['text']
+            text = self.clean_text_for_indexing(paper_data['text'])
             metadata = paper_data['metadata']
             
+            # Clean metadata text as well
+            clean_metadata = {
+                'title': self.clean_text_for_indexing(metadata['title']),
+                'arxiv_id': metadata['arxiv_id']  # This should already be safe
+            }
+            
             chunks = self.text_splitter.split_text(text)
-            all_chunks.extend(chunks)
+            # Clean each chunk to be extra safe
+            cleaned_chunks = [self.clean_text_for_indexing(chunk) for chunk in chunks]
+            all_chunks.extend(cleaned_chunks)
             
             for _ in chunks:
-                chunk_metadata.append({
-                    'title': metadata['title'],
-                    'arxiv_id': metadata['arxiv_id']
-                })
+                chunk_metadata.append(clean_metadata)
         
         embeddings = OpenAIEmbeddings()
         self.vectorstore = Chroma.from_texts(
@@ -55,17 +82,20 @@ class BM25Indexer(BaseIndexer):
         self.chunk_metadata = []
         
         for paper_data in papers_data:
-            text = paper_data['text']
+            text = self.clean_text_for_indexing(paper_data['text'])
             metadata = paper_data['metadata']
             
+            clean_metadata = {
+                'title': self.clean_text_for_indexing(metadata['title']),
+                'arxiv_id': metadata['arxiv_id']
+            }
+            
             chunks = self.text_splitter.split_text(text)
-            all_chunks.extend(chunks)
+            cleaned_chunks = [self.clean_text_for_indexing(chunk) for chunk in chunks]
+            all_chunks.extend(cleaned_chunks)
             
             for _ in chunks:
-                self.chunk_metadata.append({
-                    'title': metadata['title'],
-                    'arxiv_id': metadata['arxiv_id']
-                })
+                self.chunk_metadata.append(clean_metadata)
         
         self.chunks = all_chunks
         tokenized_chunks = [chunk.lower().split() for chunk in all_chunks]
@@ -90,17 +120,20 @@ class TFIDFIndexer(BaseIndexer):
         self.chunk_metadata = []
         
         for paper_data in papers_data:
-            text = paper_data['text']
+            text = self.clean_text_for_indexing(paper_data['text'])
             metadata = paper_data['metadata']
             
+            clean_metadata = {
+                'title': self.clean_text_for_indexing(metadata['title']),
+                'arxiv_id': metadata['arxiv_id']
+            }
+            
             chunks = self.text_splitter.split_text(text)
-            all_chunks.extend(chunks)
+            cleaned_chunks = [self.clean_text_for_indexing(chunk) for chunk in chunks]
+            all_chunks.extend(cleaned_chunks)
             
             for _ in chunks:
-                self.chunk_metadata.append({
-                    'title': metadata['title'],
-                    'arxiv_id': metadata['arxiv_id']
-                })
+                self.chunk_metadata.append(clean_metadata)
         
         self.chunks = all_chunks
         self.vectorizer = TfidfVectorizer(max_features=5000)
@@ -125,17 +158,20 @@ class InvertedIndexer(BaseIndexer):
         self.chunk_metadata = []
         
         for paper_data in papers_data:
-            text = paper_data['text']
+            text = self.clean_text_for_indexing(paper_data['text'])
             metadata = paper_data['metadata']
             
+            clean_metadata = {
+                'title': self.clean_text_for_indexing(metadata['title']),
+                'arxiv_id': metadata['arxiv_id']
+            }
+            
             chunks = self.text_splitter.split_text(text)
-            all_chunks.extend(chunks)
+            cleaned_chunks = [self.clean_text_for_indexing(chunk) for chunk in chunks]
+            all_chunks.extend(cleaned_chunks)
             
             for _ in chunks:
-                self.chunk_metadata.append({
-                    'title': metadata['title'],
-                    'arxiv_id': metadata['arxiv_id']
-                })
+                self.chunk_metadata.append(clean_metadata)
         
         self.chunks = all_chunks
         self.inverted_index = {}

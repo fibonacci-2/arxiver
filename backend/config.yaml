@@ -12,4 +12,4 @@ output:
   format: latex
 search:
   max_results: 10
-  top_papers: 20
+  top_papers: 8

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "Starting Paper Producer Web UI..."
+echo "Starting Composer AI Web UI..."
 echo "Installing dependencies..."
 pip install -r requirements.txt > /dev/null 2>&1
 

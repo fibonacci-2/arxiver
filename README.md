@@ -1,4 +1,4 @@
-# Paper Producer 📄
+# Composer AI 📄
 
 **Advanced RAG system for generating comprehensive research reports from ArXiv papers with an intelligent web interface.**
 
